@@ -6,6 +6,10 @@ Sito personale a forma di cruciverba: rebuild study dichiarato di
 
 Vanilla HTML/CSS/JS, nessuna dipendenza, deploy su GitHub Pages.
 
+Come l'originale: le lettere sono pre-scritte e nascoste, il click su una cella
+rivela la sua lettera; quando una parola è completa il suo indizio sotto "INFO"
+sfuma dal grigio al nero. A cruciverba completato la pagina si ricarica dopo 30s.
+
 - `index.html`, `style.css`, `script.js` — il sito.
 - `tools/design-notes.md` — valori di design estratti dall'originale (STEP 0).
 - `tools/generate-landscape.js` — script Node usa-e-getta che genera e

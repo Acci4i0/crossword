@@ -67,11 +67,6 @@ body {
   outline: 1px solid;
   outline-offset: -0.5px;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.square.focused {
-  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .square .content {
@@ -91,19 +86,9 @@ body {
   font-size: calc(var(--cell-size) * 0.15);
 }
 
-/* ---- Input nascosto per la tastiera mobile ---- */
-
-.keyboard-input {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  border: none;
-  outline: none;
-  opacity: 0;
-  font-size: 16px; /* evita lo zoom automatico di iOS Safari al focus */
+/* Lettere pre-scritte, nascoste finché la cella non viene cliccata. */
+.hidden-letter {
+  visibility: hidden;
 }
 
 /* ---- Footer: INFO + CONTACT ---- */
@@ -180,11 +165,5 @@ a {
   footer {
     width: 95%;
     font-size: 2.5vw;
-  }
-}
-
-@media screen and (min-width: 1513px) {
-  footer {
-    font-size: 0.75vw;
   }
 }

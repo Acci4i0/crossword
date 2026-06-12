@@ -12,7 +12,7 @@ di questo repo è scritto da zero.
 | font-weight globale | `100`                                             |
 | lettera nella cella | `3.5vw` desktop · `5vw` mobile (centrata, flex)   |
 | numerino hint       | `1vw` desktop (margin `0.75vw`) · `2.5vw` mobile (margin `0.5vw`), assoluto in alto a sinistra |
-| footer (INFO/CONTACT)| `1vw` desktop · `2.5vw` mobile · `0.75vw` ≥1513px |
+| footer (INFO/CONTACT)| `1vw` desktop · `2.5vw` mobile (vedi nota ≥1513px sotto) |
 
 ## Colori
 
@@ -41,15 +41,21 @@ di questo repo è scritto da zero.
 ## Footer
 
 - `position: fixed; bottom: 0`, larghezza 98% (95% mobile), `justify-content: space-between`.
+- L'originale ha una media query `≥1513px` che riduce il footer a `0.75vw`; di fatto
+  l'aspetto di riferimento (registrazione schermo, zoom/scaling reali) è quello a `1vw`.
+  Deviazione intenzionale del rebuild: footer sempre `1vw` su desktop, regola ≥1513px omessa.
 - Tre blocchi `div`, ciascuno con due `ul` affiancate: colonna numeri ("1." …) + colonna testi.
 - Etichetta "INFO" / "CONTACT" come prima voce in `position: absolute` (classe head-list);
   uno spaziatore invisibile (`opacity: 0` / `visibility: hidden`) tiene il posto sotto.
 - `ul { padding-left: 1vh }`, prima `ul` a 0; `li { list-style: none }`.
 
-## Comportamento (originale)
+## Comportamento (originale — verificato su registrazione schermo del 2026-06-12)
 
-- L'originale rivela le lettere pre-scritte al click sulla cella (nessuna digitazione);
-  l'indizio si rivela quando tutte le celle della parola sono state cliccate.
-- Il rebuild, come da specifica, usa invece input da tastiera con validazione.
-- Al completamento l'originale fa `location.reload()` dopo 30s (da cui lo spinner al load).
+- Tutte le lettere sono pre-scritte e nascoste (`visibility: hidden`); il click su una
+  cella rivela la sua lettera (immediato, senza transizione).
+- La prima cella di ogni parola mostra numero e lettera già rivelata.
+- Quando tutte le celle di una parola sono rivelate, l'indizio in basso passa da
+  `opacity: 0.075` a `opacity: 1` (fade sottile). Non esiste digitazione né validazione.
+- Al completamento di tutto il cruciverba l'originale fa `location.reload()` dopo 30s
+  (da cui lo spinner al load). Il rebuild replica questo comportamento.
 - Viewport meta: `width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0`.

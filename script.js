@@ -33,15 +33,14 @@ const LAYOUTS = {
   },
 };
 
+const RELOAD_AFTER_COMPLETION_MS = 30000;
+
 const PORTRAIT_BREAKPOINT = window.matchMedia("(max-width: 820px)");
 
 const grid = document.getElementById("grid");
-const keyboardInput = document.getElementById("keyboard-input");
 
 // Stato della partita corrente (ricostruito a ogni cambio di layout).
-let cells = new Map(); // "col,row" -> { element, solution, letter, fixed, words }
-let focusedKey = null;
-let focusedDirection = "across";
+let cells = new Map(); // "col,row" -> { element, letter, revealed, words }
 const solvedNumbers = new Set(); // sopravvive al cambio di layout
 
 main();
@@ -49,7 +48,7 @@ main();
 function main() {
   applyLayout(selectLayout());
   PORTRAIT_BREAKPOINT.addEventListener("change", () => applyLayout(selectLayout()));
-  wireInput();
+  grid.addEventListener("click", handleCellClick);
   hideSpinnerAfterLoad();
   if (isDevEnvironment()) runDevValidation();
 }
@@ -59,11 +58,12 @@ function selectLayout() {
 }
 
 function applyLayout(layout) {
-  focusedKey = null;
   renderGrid(layout);
   for (const number of solvedNumbers) revealClue(number);
 }
 
+// Tutte le lettere sono pre-scritte ma nascoste; la prima cella di ogni
+// parola mostra il numero della domanda e la sua lettera già rivelata.
 function renderGrid(layout) {
   grid.style.setProperty("--cols", layout.cols);
   grid.style.setProperty("--rows", layout.rows);
@@ -73,13 +73,16 @@ function renderGrid(layout) {
   for (const word of layout.words) {
     word.answer.split("").forEach((letter, index) => {
       const cell = obtainCell(wordCell(word, index), letter);
-      cell.words.push({ word, index });
-      if (index === 0) markAsHintCell(cell, word);
+      cell.words.push(word);
+      if (index === 0) {
+        addHintNumber(cell, word.number);
+        revealCell(cell);
+      }
     });
   }
 }
 
-function obtainCell({ col, row }, solution) {
+function obtainCell({ col, row }, letter) {
   const key = cellKey({ col, row });
   if (cells.has(key)) return cells.get(key);
 
@@ -88,192 +91,68 @@ function obtainCell({ col, row }, solution) {
   element.dataset.key = key;
   element.style.gridColumn = col + 1;
   element.style.gridRow = row + 1;
-  element.appendChild(buildContentSpan());
+
+  const content = document.createElement("span");
+  content.className = "content hidden-letter";
+  content.textContent = letter;
+  element.appendChild(content);
   grid.appendChild(element);
 
-  const cell = { element, solution, letter: "", fixed: false, words: [] };
+  const cell = { element, letter, revealed: false, words: [] };
   cells.set(key, cell);
   return cell;
 }
 
-function buildContentSpan() {
-  const content = document.createElement("span");
-  content.className = "content";
-  return content;
-}
-
-// La prima cella di ogni parola mostra il numero e la prima lettera.
-function markAsHintCell(cell, word) {
+function addHintNumber(cell, number) {
   const mini = document.createElement("span");
   mini.className = "mini";
-  mini.textContent = word.number;
+  mini.textContent = number;
   cell.element.appendChild(mini);
-
-  cell.fixed = true;
-  setCellLetter(cell, cell.solution);
 }
 
-// ---- Input ----
-
-function wireInput() {
-  grid.addEventListener("click", handleCellClick);
-  keyboardInput.addEventListener("keydown", handleInput);
-  keyboardInput.addEventListener("input", handleTextEntry);
-  resetKeyboardInput();
-}
+// ---- Interazione: il click su una cella rivela la sua lettera ----
 
 function handleCellClick(event) {
   const square = event.target.closest(".square");
   if (!square) return;
-  focusCell(square.dataset.key);
-  keyboardInput.focus({ preventScroll: true });
+  const cell = cells.get(square.dataset.key);
+  if (cell.revealed) return;
+  revealCell(cell);
+  cell.words.forEach(checkWordCompletion);
 }
 
-function handleInput(event) {
-  if (event.key === "Backspace") {
-    event.preventDefault();
-    eraseLetter();
-  } else if (isArrowKey(event.key)) {
-    event.preventDefault();
-    moveFocusByArrow(event.key);
-  } else if (isSingleLetter(event.key)) {
-    event.preventDefault();
-    enterLetter(event.key.toUpperCase());
-  }
+function revealCell(cell) {
+  cell.revealed = true;
+  cell.element.querySelector(".content").classList.remove("hidden-letter");
 }
 
-// Tastiere mobile: niente keydown affidabile, si osserva il valore dell'input.
-// Un carattere sentinella permette di rilevare il Backspace come cancellazione.
-function handleTextEntry() {
-  const value = keyboardInput.value;
-  if (value.length === 0) {
-    eraseLetter();
-  } else {
-    const typed = value[value.length - 1].toUpperCase();
-    if (isSingleLetter(typed)) enterLetter(typed);
-  }
-  resetKeyboardInput();
-}
-
-function resetKeyboardInput() {
-  keyboardInput.value = " ";
-}
-
-function enterLetter(letter) {
-  skipFixedCellsForward();
-  const cell = focusedCell();
-  if (!cell || cell.fixed) return;
-  setCellLetter(cell, letter);
-  cell.words.forEach(({ word }) => checkWordCompletion(word));
-  stepAlongFocusedWord(1);
-}
-
-// Le lettere pre-scritte (prima cella di ogni parola) non si modificano:
-// digitando, il focus le scavalca e scrive nella prima cella editabile.
-function skipFixedCellsForward() {
-  let cell = focusedCell();
-  while (cell !== null && cell.fixed) {
-    const before = focusedKey;
-    stepAlongFocusedWord(1);
-    if (focusedKey === before) return;
-    cell = focusedCell();
-  }
-}
-
-function eraseLetter() {
-  const cell = focusedCell();
-  if (!cell) return;
-  if (cell.letter !== "" && !cell.fixed) {
-    setCellLetter(cell, "");
-  } else {
-    stepAlongFocusedWord(-1);
-    const previous = focusedCell();
-    if (previous && !previous.fixed) setCellLetter(previous, "");
-  }
-}
-
-function setCellLetter(cell, letter) {
-  cell.letter = letter;
-  cell.element.querySelector(".content").textContent = letter;
-}
-
-// ---- Focus ----
-
-function focusCell(key) {
-  const cell = cells.get(key);
-  if (!cell) return;
-
-  focusedDirection = pickDirection(cell, key);
-  if (focusedKey !== null && cells.has(focusedKey)) {
-    cells.get(focusedKey).element.classList.remove("focused");
-  }
-  focusedKey = key;
-  cell.element.classList.add("focused");
-}
-
-// Un secondo tap sulla stessa cella d'incrocio cambia direzione.
-function pickDirection(cell, key) {
-  const directions = cell.words.map(({ word }) => word.direction);
-  if (key === focusedKey && directions.length > 1) {
-    return focusedDirection === "across" ? "down" : "across";
-  }
-  if (directions.includes(focusedDirection)) return focusedDirection;
-  return directions[0];
-}
-
-function stepAlongFocusedWord(delta) {
-  const cell = focusedCell();
-  if (!cell) return;
-  const position = cell.words.find(({ word }) => word.direction === focusedDirection)
-    || cell.words[0];
-  const nextIndex = position.index + delta;
-  if (nextIndex < 0 || nextIndex >= position.word.answer.length) return;
-  focusCell(cellKey(wordCell(position.word, nextIndex)));
-}
-
-function moveFocusByArrow(key) {
-  const steps = {
-    ArrowLeft: { col: -1, row: 0 },
-    ArrowRight: { col: 1, row: 0 },
-    ArrowUp: { col: 0, row: -1 },
-    ArrowDown: { col: 0, row: 1 },
-  };
-  const step = steps[key];
-  const [col, row] = focusedKey.split(",").map(Number);
-  const targetKey = cellKey({ col: col + step.col, row: row + step.row });
-  if (cells.has(targetKey)) focusCell(targetKey);
-}
-
-function focusedCell() {
-  return focusedKey === null ? null : cells.get(focusedKey);
-}
-
-function isArrowKey(key) {
-  return key === "ArrowLeft" || key === "ArrowRight" || key === "ArrowUp" || key === "ArrowDown";
-}
-
-function isSingleLetter(key) {
-  return /^[a-zA-Z]$/.test(key);
-}
-
-// ---- Validazione delle risposte e reveal ----
+// ---- Completamento e reveal degli indizi ----
 
 function checkWordCompletion(word) {
   if (solvedNumbers.has(word.number)) return;
-  const written = word.answer
+  const complete = word.answer
     .split("")
-    .map((_, index) => cells.get(cellKey(wordCell(word, index))).letter)
-    .join("");
-  if (written === word.answer) {
-    solvedNumbers.add(word.number);
-    revealClue(word.number);
-  }
+    .every((_, index) => cells.get(cellKey(wordCell(word, index))).revealed);
+  if (!complete) return;
+  solvedNumbers.add(word.number);
+  revealClue(word.number);
+  if (solvedNumbers.size === currentWordCount()) scheduleReload();
 }
 
 function revealClue(number) {
   document
     .querySelectorAll(`[data-clue="${number}"]`)
     .forEach((clue) => clue.classList.add("reveal"));
+}
+
+function currentWordCount() {
+  return selectLayout().words.length;
+}
+
+// Come l'originale: a cruciverba completo la pagina si ricarica poco dopo
+// (ed è per questo che al load compare lo spinner).
+function scheduleReload() {
+  setTimeout(() => location.reload(), RELOAD_AFTER_COMPLETION_MS);
 }
 
 // ---- Spinner ----
