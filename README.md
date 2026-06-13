@@ -20,3 +20,4 @@ sfuma dal grigio al nero. A cruciverba completato la pagina si ricarica dopo 30s
 In dev (`localhost` o `?dev` nell'URL) `validateLayout()` controlla al load
 che entrambi i layout siano connessi, senza conflitti di lettere e senza
 adiacenze fuori dagli incroci.
+
