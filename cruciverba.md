@@ -52,26 +52,24 @@ Le risposte vanno gestite tutte in maiuscolo.
 
 ## GRIGLIA — LAYOUT PORTRAIT (già verificato, usare così com'è)
 
-Coordinate (colonna, riga), origine in alto a sinistra. Griglia 16 colonne × 12 righe. Formato: parola, direzione, cella iniziale.
+Coordinate (colonna, riga), origine in alto a sinistra. Griglia 10 colonne × 11 righe — stessa forma della griglia mobile dell'originale (~10×13): riempie la larghezza (celle = `100vw/10`) e resta in portrait. Generata con `tools/generate-portrait.js`. Formato: parola, direzione, cella iniziale.
 
 |#|Parola|Direzione|Start (col, riga)|
 |-|-|-|-|
-|1|ANDREA|across|(10, 4)|
-|2|LANDO|down|(6, 4)|
-|3|ACCIAIO|across|(2, 5)|
-|4|ENGINEERING|down|(11, 0)|
-|5|COMPLAIN|across|(5, 8)|
-|6|SPORT|down|(8, 7)|
-|7|ITALY|down|(15, 2)|
-|8|LMINDUSTRY|across|(0, 10)|
+|1|ANDREA|across|(4, 0)|
+|2|LANDO|down|(6, 3)|
+|3|ACCIAIO|down|(2, 1)|
+|4|ENGINEERING|down|(8, 0)|
+|5|COMPLAIN|across|(2, 3)|
+|6|SPORT|across|(0, 7)|
+|7|ITALY|down|(4, 6)|
+|8|LMINDUSTRY|down|(0, 1)|
 
 Incroci risultanti (da usare come test di verifica nel codice):
 
-* ENGINEERING × ANDREA su N in (11,4); ENGINEERING × COMPLAIN su I in (11,8)
-* ANDREA × ITALY su A in (15,4)
-* LANDO × ACCIAIO su A in (6,5); LANDO × COMPLAIN su O in (6,8)
-* COMPLAIN × SPORT su P in (8,8)
-* SPORT × LMINDUSTRY su R in (8,10)
+* ANDREA × ENGINEERING su E in (8,0)
+* COMPLAIN × ACCIAIO su C in (2,3); COMPLAIN × LANDO su L in (6,3); COMPLAIN × ENGINEERING su I in (8,3)
+* SPORT × LMINDUSTRY su S in (0,7); SPORT × ACCIAIO su O in (2,7); SPORT × ITALY su T in (4,7)
 
 Ogni parola ha almeno un incrocio, la griglia è connessa, non ci sono conflitti di lettere né adiacenze tra parole parallele. Scrivi comunque una funzione di validazione che lo verifichi al load in dev (rimossa o disattivata in produzione).
 

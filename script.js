@@ -3,18 +3,21 @@
 
 // Layout landscape generato e verificato con tools/generate-landscape.js.
 const LAYOUTS = {
+  // Forma 10×11 come la griglia mobile di sa-m.fr (~10×13): riempie la
+  // larghezza (celle = 100vw/10) e resta in portrait. Generato e verificato
+  // con tools/generate-portrait.js.
   portrait: {
-    cols: 16,
-    rows: 12,
+    cols: 10,
+    rows: 11,
     words: [
-      { number: 1, answer: "ANDREA", direction: "across", col: 10, row: 4 },
-      { number: 2, answer: "LANDO", direction: "down", col: 6, row: 4 },
-      { number: 3, answer: "ACCIAIO", direction: "across", col: 2, row: 5 },
-      { number: 4, answer: "ENGINEERING", direction: "down", col: 11, row: 0 },
-      { number: 5, answer: "COMPLAIN", direction: "across", col: 5, row: 8 },
-      { number: 6, answer: "SPORT", direction: "down", col: 8, row: 7 },
-      { number: 7, answer: "ITALY", direction: "down", col: 15, row: 2 },
-      { number: 8, answer: "LMINDUSTRY", direction: "across", col: 0, row: 10 },
+      { number: 1, answer: "ANDREA", direction: "across", col: 4, row: 0 },
+      { number: 2, answer: "LANDO", direction: "down", col: 6, row: 3 },
+      { number: 3, answer: "ACCIAIO", direction: "down", col: 2, row: 1 },
+      { number: 4, answer: "ENGINEERING", direction: "down", col: 8, row: 0 },
+      { number: 5, answer: "COMPLAIN", direction: "across", col: 2, row: 3 },
+      { number: 6, answer: "SPORT", direction: "across", col: 0, row: 7 },
+      { number: 7, answer: "ITALY", direction: "down", col: 4, row: 6 },
+      { number: 8, answer: "LMINDUSTRY", direction: "down", col: 0, row: 1 },
     ],
   },
   landscape: {

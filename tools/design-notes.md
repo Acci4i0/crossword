@@ -26,6 +26,14 @@ di questo repo è scritto da zero.
 
 ## Griglia
 
+- **Forma del layout portrait (deviazione dallo spec, da screenshot utente del 2026-06-15).**
+  Lo spec dava un portrait 16×12, ma su iPhone produceva celle minuscole (`100vw/16`
+  ≈ 23px) e una griglia larga e schiacciata: lontanissima dalla vista mobile di
+  sa-m.fr, che riempie la larghezza con ~10 colonne e celle grandi. Rigenerato un
+  portrait **10 colonne × 11 righe** con `tools/generate-portrait.js`, stessa forma
+  della griglia mobile dell'originale (~10×13). Ora le celle sono
+  `min(100vw/10, 80vh/11)` ≈ 39px (vincolate in larghezza): la griglia riempie la
+  larghezza edge-to-edge come l'originale, restando in portrait.
 - Celle quadrate: trucco `padding-top: 100%` su `::before`, contenuto in overlay assoluto.
 - Bordi: `outline: 1px solid` con `outline-offset: -0.5px` (bordi condivisi da 1px, niente doppi bordi).
 - Contenitore: flex con wrap; desktop 15 colonne (`flex-basis: calc(100%/15)`), mobile ≤820px 10 colonne (`calc(100%/10)`).
