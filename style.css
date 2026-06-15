@@ -172,43 +172,35 @@ a {
   }
 }
 
-/* ---- Mobile landscape: ruota il contenuto e mostralo in portrait ---- */
-/* iOS non permette un vero lock dell'orientamento, quindi presentiamo la
-   pagina ruotata di 90°. Le unità vw/vh non ruotano col transform, perciò qui
-   sono scambiate: la "larghezza" portrait è 100vh, l'"altezza" è 100vw. */
+/* ---- Avviso di rotazione (telefono in landscape) ---- */
+/* iOS non permette un vero lock dell'orientamento: quando il telefono è in
+   orizzontale copriamo la pagina con un invito a rimetterlo in verticale. */
+
+.rotate-notice {
+  display: none;
+}
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .rotor {
+  .rotate-notice {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vh;
-    height: 100vw;
-    transform-origin: top left;
-    transform: rotate(90deg) translateY(-100%);
-    overflow: hidden;
+    inset: 0;
+    z-index: 20; /* sopra spinner (10) e griglia */
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(12px, 4vh, 32px);
+    text-align: center;
   }
 
-  .grid-area {
-    min-height: 100vw;
-    padding: 0 8vh 16vw;
+  .rotate-notice svg {
+    width: clamp(56px, 18vh, 110px);
+    height: auto;
   }
 
-  .grid {
-    --cell-size: min(calc((100vh - 16vh) / var(--cols)), calc(80vw / var(--rows)));
-  }
-
-  .square .content {
-    font-size: calc(var(--cell-size) * 0.5);
-  }
-
-  .square .mini {
-    margin: calc(var(--cell-size) * 0.05);
-    font-size: calc(var(--cell-size) * 0.25);
-  }
-
-  footer {
-    width: 95%;
-    font-size: 2.5vh;
+  .rotate-notice p {
+    margin: 0;
+    font-size: clamp(15px, 6vh, 26px);
   }
 }

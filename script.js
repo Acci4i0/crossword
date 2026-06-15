@@ -38,11 +38,7 @@ const LAYOUTS = {
 
 const RELOAD_AFTER_COMPLETION_MS = 30000;
 
-// Il layout portrait si usa su tutti i telefoni: in portrait direttamente, in
-// landscape il contenuto viene ruotato via CSS (vedi .rotor in style.css).
-const MOBILE = window.matchMedia(
-  "(max-width: 820px), (orientation: landscape) and (max-height: 500px)"
-);
+const PORTRAIT_BREAKPOINT = window.matchMedia("(max-width: 820px)");
 
 const grid = document.getElementById("grid");
 
@@ -54,14 +50,14 @@ main();
 
 function main() {
   applyLayout(selectLayout());
-  MOBILE.addEventListener("change", () => applyLayout(selectLayout()));
+  PORTRAIT_BREAKPOINT.addEventListener("change", () => applyLayout(selectLayout()));
   grid.addEventListener("click", handleCellClick);
   hideSpinnerAfterLoad();
   if (isDevEnvironment()) runDevValidation();
 }
 
 function selectLayout() {
-  return MOBILE.matches ? LAYOUTS.portrait : LAYOUTS.landscape;
+  return PORTRAIT_BREAKPOINT.matches ? LAYOUTS.portrait : LAYOUTS.landscape;
 }
 
 function applyLayout(layout) {
