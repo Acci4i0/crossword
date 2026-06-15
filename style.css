@@ -149,11 +149,12 @@ a {
 
 @media (max-width: 820px) {
   .grid {
-    --cell-size: min(calc(100vw / var(--cols)), calc(80vh / var(--rows)));
+    /* gutter laterale come l'originale: la griglia non tocca i bordi schermo */
+    --cell-size: min(calc((100vw - 16vw) / var(--cols)), calc(80vh / var(--rows)));
   }
 
   .grid-area {
-    padding: 0 0 16vh;
+    padding: 0 8vw 16vh;
   }
 
   .square .content {
