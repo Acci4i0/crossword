@@ -133,8 +133,17 @@ footer ul:first-child {
 }
 
 .clue {
-  opacity: 0.075;
+  opacity: 0.3;
   transition: opacity 0.2s ease-in-out;
+  /* numero + testo sulla stessa riga: il numero resta in alto a sinistra
+     anche quando l'indizio va a capo, così le righe non si disallineano */
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.clue .num {
+  flex: none;
 }
 
 .clue.reveal {

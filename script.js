@@ -1,40 +1,26 @@
 // Rebuild study of sa-m.fr by Samuel Dumez.
 // Original concept and design © Samuel Dumez. Rebuilt for study purposes.
 
-// Layout landscape generato e verificato con tools/generate-landscape.js.
+// Tutti i dati specifici della persona stanno in puzzle.js (global PUZZLE);
+// l'algoritmo dei layout sta in generator.js (global generateLayout).
+
+// Indizi normalizzati: risposte in MAIUSCOLO e solo A-Z.
+const CLUES = PUZZLE.clues.map(normalizeClue);
+
+// I due layout vengono generati a runtime dalle risposte. Deterministico:
+// stesso puzzle.js = stessa griglia a ogni reload. null se non e generabile.
 const LAYOUTS = {
-  // Forma 10×11 come la griglia mobile di sa-m.fr (~10×13): riempie la
-  // larghezza (celle = 100vw/10) e resta in portrait. Generato e verificato
-  // con tools/generate-portrait.js.
-  portrait: {
-    cols: 10,
-    rows: 11,
-    words: [
-      { number: 1, answer: "ANDREA", direction: "across", col: 4, row: 0 },
-      { number: 2, answer: "LANDO", direction: "down", col: 6, row: 3 },
-      { number: 3, answer: "ACCIAIO", direction: "down", col: 2, row: 1 },
-      { number: 4, answer: "ENGINEERING", direction: "down", col: 8, row: 0 },
-      { number: 5, answer: "COMPLAIN", direction: "across", col: 2, row: 3 },
-      { number: 6, answer: "SPORT", direction: "across", col: 0, row: 7 },
-      { number: 7, answer: "ITALY", direction: "down", col: 4, row: 6 },
-      { number: 8, answer: "LMINDUSTRY", direction: "down", col: 0, row: 1 },
-    ],
-  },
-  landscape: {
-    cols: 15,
-    rows: 7,
-    words: [
-      { number: 1, answer: "ANDREA", direction: "across", col: 9, row: 4 },
-      { number: 2, answer: "LANDO", direction: "down", col: 5, row: 0 },
-      { number: 3, answer: "ACCIAIO", direction: "down", col: 14, row: 0 },
-      { number: 4, answer: "ENGINEERING", direction: "across", col: 1, row: 2 },
-      { number: 5, answer: "COMPLAIN", direction: "across", col: 1, row: 0 },
-      { number: 6, answer: "SPORT", direction: "across", col: 3, row: 4 },
-      { number: 7, answer: "ITALY", direction: "down", col: 9, row: 2 },
-      { number: 8, answer: "LMINDUSTRY", direction: "across", col: 0, row: 6 },
-    ],
-  },
+  portrait: generateLayout(CLUES, "portrait"),
+  landscape: generateLayout(CLUES, "landscape"),
 };
+
+function normalizeClue(clue) {
+  return {
+    number: clue.number,
+    clue: clue.clue,
+    answer: clue.answer.toUpperCase().replace(/[^A-Z]/g, ""),
+  };
+}
 
 const RELOAD_AFTER_COMPLETION_MS = 30000;
 
@@ -49,11 +35,105 @@ const solvedNumbers = new Set(); // sopravvive al cambio di layout
 main();
 
 function main() {
+  document.title = PUZZLE.title;
+  renderFooter();
+  hideSpinnerAfterLoad();
+
+  if (!LAYOUTS.portrait || !LAYOUTS.landscape) {
+    reportGenerationFailure();
+    return;
+  }
+
   applyLayout(selectLayout());
   PORTRAIT_BREAKPOINT.addEventListener("change", () => applyLayout(selectLayout()));
   grid.addEventListener("click", handleCellClick);
-  hideSpinnerAfterLoad();
   if (isDevEnvironment()) runDevValidation();
+}
+
+// Le risposte non si incrociano abbastanza: si avvisa l'autore (in anteprima)
+// invece di mostrare una pagina rotta.
+function reportGenerationFailure() {
+  console.error(
+    "Impossibile generare il cruciverba: le risposte in puzzle.js non si incrociano. " +
+      "Controlla che condividano alcune lettere."
+  );
+  grid.textContent =
+    "⚠️ Impossibile generare il cruciverba: le risposte in puzzle.js devono condividere alcune lettere.";
+}
+
+// ---- Footer (INFO + CONTACT) generato dai dati di PUZZLE ----
+
+function renderFooter() {
+  const footer = document.getElementById("footer");
+  footer.innerHTML = "";
+  const half = Math.ceil(CLUES.length / 2);
+  footer.appendChild(infoColumn(CLUES.slice(0, half), "INFO"));
+  footer.appendChild(infoColumn(CLUES.slice(half), null));
+  footer.appendChild(contactBlock(PUZZLE.contact));
+}
+
+// Una colonna di indizi. L'etichetta "INFO" (assoluta) compare solo nella
+// prima colonna; lo spacer nascosto riserva la riga dell'etichetta cosi le due
+// colonne partono allineate.
+function infoColumn(clues, label) {
+  const div = document.createElement("div");
+  const ul = document.createElement("ul");
+  if (label) ul.appendChild(listItem("head-list", label));
+  ul.appendChild(listItem("spacer", clues.length ? `${clues[0].number}.` : ""));
+  for (const clue of clues) ul.appendChild(clueItem(clue));
+  div.appendChild(ul);
+  return div;
+}
+
+function clueItem(clue) {
+  const item = document.createElement("li");
+  item.className = "clue";
+  item.dataset.clue = clue.number;
+  const num = document.createElement("span");
+  num.className = "num";
+  num.textContent = `${clue.number}.`;
+  item.append(num, document.createTextNode(clue.clue));
+  return item;
+}
+
+function contactBlock(contact) {
+  const div = document.createElement("div");
+  div.className = "contact";
+
+  const labels = document.createElement("ul");
+  labels.appendChild(listItem("head-list", "CONTACT"));
+  labels.appendChild(listItem("spacer", "m."));
+  for (const prefix of ["m.", "t.", "i.", "©"]) labels.appendChild(listItem(null, prefix));
+
+  const values = document.createElement("ul");
+  values.appendChild(listItem("spacer", "CONTACT"));
+  values.appendChild(linkItem(`mailto:${contact.mail}`, contact.mail));
+  values.appendChild(linkItem(`tel:${contact.tel}`, contact.telDisplay));
+  values.appendChild(linkItem(contact.instagramUrl, `@${contact.instagram}`, true));
+  values.appendChild(listItem(null, String(contact.year)));
+
+  div.append(labels, values);
+  return div;
+}
+
+function listItem(className, text) {
+  const item = document.createElement("li");
+  if (className) item.className = className;
+  item.textContent = text;
+  return item;
+}
+
+function linkItem(href, text, external) {
+  const item = document.createElement("li");
+  const link = document.createElement("a");
+  link.href = href;
+  link.textContent = text;
+  if (external) {
+    link.target = "_blank";
+    link.rel = "noopener";
+  }
+  item.appendChild(link);
+  return item;
 }
 
 function selectLayout() {
@@ -187,6 +267,7 @@ function isDevEnvironment() {
     || location.hostname === "127.0.0.1";
 }
 
+// validateLayout() arriva da generator.js (stessa logica usata in generazione).
 function runDevValidation() {
   for (const [name, layout] of Object.entries(LAYOUTS)) {
     const problems = validateLayout(layout);
@@ -196,61 +277,4 @@ function runDevValidation() {
       console.info(`Layout ${name}: OK`);
     }
   }
-}
-
-// Stessa logica di tools/generate-landscape.js: lettere coerenti negli
-// incroci, ogni parola incrocia, niente adiacenze fuori incrocio, connessa.
-function validateLayout(layout) {
-  const problems = [];
-  const letters = new Map();
-  const wordsAt = new Map();
-
-  for (const word of layout.words) {
-    word.answer.split("").forEach((letter, index) => {
-      const key = cellKey(wordCell(word, index));
-      if (letters.has(key) && letters.get(key) !== letter) {
-        problems.push(`conflitto di lettere in ${key}`);
-      }
-      letters.set(key, letter);
-      if (!wordsAt.has(key)) wordsAt.set(key, new Set());
-      wordsAt.get(key).add(word.number);
-    });
-  }
-
-  for (const word of layout.words) {
-    const crosses = word.answer
-      .split("")
-      .some((_, index) => wordsAt.get(cellKey(wordCell(word, index))).size > 1);
-    if (!crosses) problems.push(`${word.answer} non incrocia nessuna parola`);
-  }
-
-  for (const key of wordsAt.keys()) {
-    const [col, row] = key.split(",").map(Number);
-    for (const neighborKey of [cellKey({ col: col + 1, row }), cellKey({ col, row: row + 1 })]) {
-      if (!wordsAt.has(neighborKey)) continue;
-      const shared = [...wordsAt.get(key)].some((n) => wordsAt.get(neighborKey).has(n));
-      if (!shared) problems.push(`adiacenza non valida tra ${key} e ${neighborKey}`);
-    }
-  }
-
-  if (!isLayoutConnected(layout, wordsAt)) problems.push("griglia non connessa");
-  return problems;
-}
-
-function isLayoutConnected(layout, wordsAt) {
-  const links = new Map(layout.words.map((w) => [w.number, new Set()]));
-  for (const numbers of wordsAt.values()) {
-    for (const a of numbers) for (const b of numbers) {
-      if (a !== b) links.get(a).add(b);
-    }
-  }
-  const visited = new Set();
-  const queue = [layout.words[0].number];
-  while (queue.length > 0) {
-    const current = queue.pop();
-    if (visited.has(current)) continue;
-    visited.add(current);
-    queue.push(...links.get(current));
-  }
-  return visited.size === layout.words.length;
 }
