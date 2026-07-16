@@ -37,7 +37,6 @@ main();
 function main() {
   document.title = PUZZLE.title;
   renderFooter();
-  hideSpinnerAfterLoad();
 
   if (!LAYOUTS.portrait || !LAYOUTS.landscape) {
     reportGenerationFailure();
@@ -233,18 +232,10 @@ function currentWordCount() {
 }
 
 // Come l'originale: a cruciverba completo la pagina si ricarica poco dopo
-// (ed è per questo che al load compare lo spinner).
+// (ed è per questo che al load compare il preloader col contatore —
+// vedi preloader.js).
 function scheduleReload() {
   setTimeout(() => location.reload(), RELOAD_AFTER_COMPLETION_MS);
-}
-
-// ---- Spinner ----
-
-function hideSpinnerAfterLoad() {
-  const spinner = document.getElementById("spinner");
-  window.addEventListener("load", () => {
-    setTimeout(() => spinner.classList.add("hidden"), 400);
-  });
 }
 
 // ---- Geometria condivisa ----
