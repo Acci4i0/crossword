@@ -66,11 +66,24 @@ const CrosswordGenerator = (() => {
     let best = null;
     let bestScore = Infinity;
     const seenStates = new Set();
+    const indexByNumber = new Map(words.map((w, i) => [w.number, i]));
+
+    // Griglia mantenuta incrementalmente lungo la ricorsione (con undo al
+    // backtrack): permette di controllare un piazzamento in O(lunghezza
+    // parola) invece di rivalidare l'intero layout a ogni candidato.
+    const lettersByCell = new Map(); // chiave numerica -> lettera
+    const wordsByCell = new Map(); // chiave numerica -> array di numeri di parola
+    const startCells = new Set(); // celle iniziali delle parole piazzate
+    let minCol = 0;
+    let maxCol = 0;
+    let minRow = 0;
+    let maxRow = 0;
 
     const first = order[0];
     const firstDirection = first.forcedDirection || orientation.firstDirection;
-    const placed = [{ ...first, direction: firstDirection, col: 0, row: 0 }];
-    extend(order.slice(1), placed);
+    const firstPlacement = { ...first, direction: firstDirection, col: 0, row: 0 };
+    place(firstPlacement);
+    extend(order.slice(1), [firstPlacement]);
     return best;
 
     // A ogni passo prova qualunque parola rimanente: l'ordine di piazzamento
@@ -79,63 +92,176 @@ const CrosswordGenerator = (() => {
     function extend(remaining, placed) {
       if (seenStates.size > MAX_STATES) return; // rete di sicurezza
       if (remaining.length === 0) {
-        const score = orientation.score(boundingBox(placed));
+        const score = orientation.score({
+          width: maxCol - minCol + 1,
+          height: maxRow - minRow + 1,
+        });
         if (score < bestScore) {
           bestScore = score;
           best = placed.map((p) => ({ ...p }));
         }
         return;
       }
-      const state = stateKey(placed);
+      // Chiave dello stato a meno di traslazioni: evita di riesplorare lo
+      // stesso insieme di piazzamenti raggiunto da un ordine diverso. Ogni
+      // piazzamento diventa un intero (indice parola, direzione, posizione
+      // relativa agli estremi — sempre < 256 con le dimensioni massime degli
+      // orientamenti) e l'insieme ordinato una stringa compatta.
+      const codes = [];
+      for (const p of placed) {
+        codes.push(
+          (indexByNumber.get(p.number) << 17) |
+            ((p.direction === "down" ? 1 : 0) << 16) |
+            ((p.col - minCol) << 8) |
+            (p.row - minRow)
+        );
+      }
+      codes.sort(byValue);
+      const chars = [];
+      for (const v of codes) chars.push(v >>> 16, v & 0xffff);
+      const state = String.fromCharCode.apply(null, chars);
       if (seenStates.has(state)) return;
       seenStates.add(state);
 
       for (const word of remaining) {
         const rest = remaining.filter((w) => w !== word);
-        for (const placement of crossingPlacements(word, placed)) {
-          const candidate = [...placed, placement];
-          if (!fitsBounds(candidate, orientation)) continue;
-          if (validate(normalize(candidate)).length > 0) continue;
-          extend(rest, candidate);
+        const candidates = crossingCandidates(word, placed);
+        for (let c = 0; c < candidates.length; c += 3) {
+          const direction = candidates[c] === 0 ? "across" : "down";
+          const col = candidates[c + 1];
+          const row = candidates[c + 2];
+          if (!fits(word.answer.length, direction, col, row)) continue;
+          if (!lettersCompatible(word.answer, direction, col, row)) continue;
+          const placement = { ...word, direction, col, row };
+          const undo = place(placement);
+          if (adjacencyValid(placement)) extend(rest, [...placed, placement]);
+          undo();
         }
       }
     }
+
+    // Bounding box della griglia se si aggiungesse la parola, senza piazzarla.
+    function fits(length, direction, col, row) {
+      const endCol = direction === "across" ? col + length - 1 : col;
+      const endRow = direction === "down" ? row + length - 1 : row;
+      const width = Math.max(maxCol, endCol) - Math.min(minCol, col) + 1;
+      const height = Math.max(maxRow, endRow) - Math.min(minRow, row) + 1;
+      return width <= orientation.maxWidth && height <= orientation.maxHeight;
+    }
+
+    // Lettere coerenti su ogni cella gia occupata, e niente due parole che
+    // partono dalla stessa cella (numerini sovrapposti).
+    function lettersCompatible(answer, direction, col, row) {
+      let key = cellNum(col, row);
+      if (startCells.has(key)) return false;
+      const step = direction === "across" ? STRIDE : 1;
+      for (let i = 0; i < answer.length; i++, key += step) {
+        const existing = lettersByCell.get(key);
+        if (existing !== undefined && existing !== answer[i]) return false;
+      }
+      return true;
+    }
+
+    // Due celle ortogonalmente adiacenti sono lecite solo se condividono una
+    // parola: basta controllare gli intorni delle celle appena piazzate.
+    function adjacencyValid(word) {
+      const step = word.direction === "across" ? STRIDE : 1;
+      let key = cellNum(word.col, word.row);
+      for (let i = 0; i < word.answer.length; i++, key += step) {
+        const here = wordsByCell.get(key);
+        for (const delta of NEIGHBOR_DELTAS) {
+          const neighbor = wordsByCell.get(key + delta);
+          if (!neighbor) continue;
+          if (!here.some((n) => neighbor.includes(n))) return false;
+        }
+      }
+      return true;
+    }
+
+    // Scrive la parola nella griglia e restituisce la funzione di undo.
+    function place(word) {
+      const savedMinCol = minCol;
+      const savedMaxCol = maxCol;
+      const savedMinRow = minRow;
+      const savedMaxRow = maxRow;
+      const step = word.direction === "across" ? STRIDE : 1;
+      const length = word.answer.length;
+      minCol = Math.min(minCol, word.col);
+      maxCol = Math.max(maxCol, word.direction === "across" ? word.col + length - 1 : word.col);
+      minRow = Math.min(minRow, word.row);
+      maxRow = Math.max(maxRow, word.direction === "down" ? word.row + length - 1 : word.row);
+
+      const startKey = cellNum(word.col, word.row);
+      startCells.add(startKey);
+      let newLetterMask = 0; // bit i acceso = la cella i-esima era vuota
+      let key = startKey;
+      for (let i = 0; i < length; i++, key += step) {
+        if (!lettersByCell.has(key)) {
+          lettersByCell.set(key, word.answer[i]);
+          newLetterMask |= 1 << i;
+        }
+        let numbers = wordsByCell.get(key);
+        if (!numbers) wordsByCell.set(key, (numbers = []));
+        numbers.push(word.number);
+      }
+
+      return function undo() {
+        minCol = savedMinCol;
+        maxCol = savedMaxCol;
+        minRow = savedMinRow;
+        maxRow = savedMaxRow;
+        startCells.delete(startKey);
+        let key = startKey;
+        for (let i = 0; i < length; i++, key += step) {
+          if (newLetterMask & (1 << i)) lettersByCell.delete(key);
+          const numbers = wordsByCell.get(key);
+          numbers.pop();
+          if (numbers.length === 0) wordsByCell.delete(key);
+        }
+      };
+    }
   }
 
-  // Identifica un insieme di piazzamenti a meno di traslazioni: evita di
-  // riesplorare lo stesso stato raggiunto da un ordine diverso.
-  function stateKey(placed) {
-    return normalize(placed)
-      .map((p) => `${p.number}:${p.direction}:${p.col},${p.row}`)
-      .sort()
-      .join("|");
+  // Chiave numerica compatta di una cella per le mappe della ricerca: una
+  // parola "across" avanza di STRIDE, una "down" di 1. OFFSET tiene positive
+  // le coordinate negative (le parole si piazzano attorno all'origine).
+  const STRIDE = 256;
+  const OFFSET = 64;
+  const NEIGHBOR_DELTAS = [STRIDE, -STRIDE, 1, -1];
+
+  function cellNum(col, row) {
+    return (col + OFFSET) * STRIDE + (row + OFFSET);
   }
 
-  // Tutte le posizioni in cui `word` incrocia una parola gia piazzata.
-  function crossingPlacements(word, placed) {
-    const placements = [];
+  function byValue(a, b) {
+    return a - b;
+  }
+
+  // Tutte le posizioni in cui `word` incrocia una parola gia piazzata, come
+  // triple piatte [direzione (0 = across, 1 = down), col, row, ...] per non
+  // allocare un oggetto per candidato nel ciclo caldo della ricerca.
+  function crossingCandidates(word, placed) {
+    const candidates = [];
     const directions = word.forcedDirection ? [word.forcedDirection] : ["across", "down"];
     for (const direction of directions) {
+      const flag = direction === "across" ? 0 : 1;
       for (const other of placed) {
         if (other.direction === direction) continue;
         for (let i = 0; i < word.answer.length; i++) {
           for (let j = 0; j < other.answer.length; j++) {
             if (word.answer[i] !== other.answer[j]) continue;
-            const cross = cellAt(other, j);
-            const col = direction === "across" ? cross.col - i : cross.col;
-            const row = direction === "down" ? cross.row - i : cross.row;
-            const startsOnExistingStart = placed.some((p) => p.col === col && p.row === row);
-            if (!startsOnExistingStart) placements.push({ ...word, direction, col, row });
+            const crossCol = other.direction === "across" ? other.col + j : other.col;
+            const crossRow = other.direction === "down" ? other.row + j : other.row;
+            candidates.push(
+              flag,
+              direction === "across" ? crossCol - i : crossCol,
+              direction === "down" ? crossRow - i : crossRow
+            );
           }
         }
       }
     }
-    return placements;
-  }
-
-  function fitsBounds(placed, orientation) {
-    const { width, height } = boundingBox(placed);
-    return width <= orientation.maxWidth && height <= orientation.maxHeight;
+    return candidates;
   }
 
   function boundingBox(placed) {
