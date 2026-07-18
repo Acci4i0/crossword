@@ -26,8 +26,7 @@ const PUZZLE = {
     { number: 3, clue: "Lauresto in",                answer: "INGEGNERIA" },
     { number: 4, clue: "Più specifico",              answer: "GESTIONALE" },
     { number: 5, clue: "Che cosa faccio?",           answer: "WEBSITES" },
-    { number: 5, clue: "Ma faccio anche",            answer: "SPORT" },
-    { number: 6, clue: "Quale?",                     answer: "TUTTI" },
+    { number: 6, clue: "Ma faccio anche",            answer: "SPORT" }
     { number: 7, clue: "Altra passione",             answer: "LETTERATURA" },
     { number: 8, clue: "Autore preferito?",          answer: "TABUCCHI" },
   ],
