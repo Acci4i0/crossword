@@ -25,9 +25,9 @@ const PUZZLE = {
     { number: 2, clue: "Ma mi chimano",              answer: "ACCIAIO" },
     { number: 3, clue: "Lauresto in",                answer: "INGEGNERIA" },
     { number: 4, clue: "Più specifico",              answer: "GESTIONALE" },
-    { number: 5, clue: "Che cosa faccio?",           answer: "WEBSITES" },
-    { number: 6, clue: "Ma faccio anche",            answer: "SPORT" }
-    { number: 7, clue: "Altra passione",             answer: "LETTERATURA" },
+    { number: 5, clue: "Che cosa faccio?",           answer: "SITIWEB" },
+    { number: 6, clue: "Ma faccio anche",            answer: "SPORT" },
+    { number: 7, clue: "Altra passione",             answer: "LIBRI" },
     { number: 8, clue: "Autore preferito?",          answer: "TABUCCHI" },
   ],
 
