@@ -22,8 +22,8 @@ const PUZZLE = {
   // Gli indizi e le risposte. clue = la domanda mostrata sotto "INFO".
   clues: [
     { number: 1, clue: "Il mio nome",                answer: "ANDREA" },
-    { number: 2, clue: "Ma mi chimano",              answer: "ACCIAIO" },
-    { number: 3, clue: "Lauresto in",                answer: "INGEGNERIA" },
+    { number: 2, clue: "Ma mi chimano...",           answer: "ACCIAIO" },
+    { number: 3, clue: "Laureato in:",               answer: "INGEGNERIA" },
     { number: 4, clue: "Più specifico",              answer: "GESTIONALE" },
     { number: 5, clue: "Che cosa faccio?",           answer: "SITIWEB" },
     { number: 6, clue: "Ma faccio anche",            answer: "SPORT" },
