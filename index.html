@@ -12,6 +12,11 @@
          markup e si rimuove a fine animazione — vedi preloader.js -->
     <script src="preloader.js"></script>
 
+    <!-- Camminata in alto a sinistra: puramente decorativa, sempre in moto e
+         senza interazione, quindi un div aria-hidden e non un controllo.
+         L'animazione e' tutta in CSS (sprite sheet + steps), nessun JS. -->
+    <div class="walk" aria-hidden="true"></div>
+
     <!-- Visibile solo su telefono in landscape: invita a tornare in verticale. -->
     <div class="rotate-notice">
       <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"

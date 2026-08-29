@@ -148,6 +148,76 @@ a {
   }
 }
 
+/* ---- Camminata in alto a sinistra ---- */
+
+/* Sprite sheet di 7 frame generato una tantum da tools/build-walk-sprite.py a
+   partire dal GIF sorgente (600x600, figura bianca su fondo blu, 120ms a frame).
+   Il blu originale e' stato sostituito con l'azzurro del profilo; il riquadro
+   azzurro fa parte del disegno, non e' uno sfondo da bucare, percio' l'immagine
+   e' opaca e resta un quadrato pieno, staccato dai bordi.
+
+   Sta sempre in movimento e non risponde al click: non essendoci nulla da
+   avviare o fermare non serve JS, bastano steps() e un ciclo infinito.
+
+   L'inserto non e' uno stacco arbitrario: il footer e' largo 98% centrato,
+   quindi il suo margine e' esattamente 1vw (misurato: 12.8px a 1280, 14.4px a
+   1440). Usando lo stesso valore, il bordo sinistro del riquadro cade sulla
+   stessa linea verticale di "INFO" in fondo alla pagina. Su mobile il footer
+   passa a 95% e il margine diventa 2.5vw: l'override piu' sotto lo segue. */
+
+.walk {
+  --walk-size: 36px;
+  --walk-inset: 1vw;
+  --walk-frames: 7;
+  position: fixed;
+  top: var(--walk-inset);
+  left: var(--walk-inset);
+  z-index: 10; /* sotto .rotate-notice (20) e sotto il preloader (99999) */
+  width: var(--walk-size);
+  height: var(--walk-size);
+  pointer-events: none; /* decorativa: non deve rubare i click alla griglia */
+  background-image: url(assets/walk-sprite.png);
+  background-repeat: no-repeat;
+  background-size: calc(var(--walk-size) * var(--walk-frames)) var(--walk-size);
+  /* 7 frame x 120ms = 0.84s. Il numero di steps deve restare uguale a
+     --walk-frames: steps() non accetta la variabile in modo affidabile. */
+  animation: walk 0.84s steps(7) infinite;
+}
+
+/* Lo spostamento arriva a -7 celle, ma steps(7) disegna solo le posizioni da 0
+   a -6: l'ultima non viene mai mostrata, ed e' giusto cosi' perche' sarebbe di
+   nuovo la cella 0. */
+@keyframes walk {
+  /* Il `from` e' esplicito di proposito: senza, quello implicito sarebbe il
+     valore di partenza `0% 0%` e l'interpolazione fra percentuale e pixel
+     produrrebbe valori tipo calc(0% - 132px). Funziona, ma da' un computed
+     illeggibile; dichiarando 0 si resta su lunghezze pure. */
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: calc(var(--walk-size) * var(--walk-frames) * -1) 0;
+  }
+}
+
+/* Sul telefono si rimpicciolisce e si avvicina al bordo. Deve stare DOPO la
+   regola base: a parita' di specificita' vince l'ultima, quindi nel blocco
+   "Mobile portrait" piu' in alto sarebbe stato sovrascritto dai valori base. */
+@media (max-width: 820px) {
+  .walk {
+    --walk-size: 30px;
+    --walk-inset: 2.5vw; /* come il footer, che qui passa a width:95% */
+  }
+}
+
+/* Un'animazione che non si ferma mai e' proprio il caso per cui esiste questa
+   preferenza: resta il primo fotogramma, fermo. */
+@media (prefers-reduced-motion: reduce) {
+  .walk {
+    animation: none;
+  }
+}
+
 /* ---- Avviso di rotazione (telefono in landscape) ---- */
 /* iOS non permette un vero lock dell'orientamento: quando il telefono è in
    orizzontale copriamo la pagina con un invito a rimetterlo in verticale. */
