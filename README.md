@@ -1,20 +1,51 @@
-# cruciverba — rebuild study di sa-m.fr
+# crossword — a personal site shaped like a crossword
 
-Sito personale a forma di cruciverba: rebuild study dichiarato di
-[sa-m.fr](https://sa-m.fr) di Samuel Dumez. Concept e design originali
-© Samuel Dumez; ricostruito a scopo di studio con contenuti personalizzati.
+A personal site laid out as a crossword. The letters are written in advance and
+hidden; clicking a cell reveals its letter, and when a word is complete its clue
+under **INFO** fades from grey to black. Once the grid is finished the page
+reloads after 30 seconds. Vanilla HTML, CSS and JavaScript — no dependencies.
 
-Vanilla HTML/CSS/JS, nessuna dipendenza, deploy su GitHub Pages.
+**Live:** https://acci4i0.github.io/crossword/
 
-Come l'originale: le lettere sono pre-scritte e nascoste, il click su una cella
-rivela la sua lettera; quando una parola è completa il suo indizio sotto "INFO"
-sfuma dal grigio al nero. A cruciverba completato la pagina si ricarica dopo 30s.
+> **Rebuild study** of [sa-m.fr](https://sa-m.fr) by Samuel Dumez. Original
+> concept and design © Samuel Dumez; rebuilt for study, with my own content.
+> Not affiliated with the author.
 
-- `index.html`, `style.css`, `script.js` — il sito.
-- `tools/design-notes.md` — valori di design estratti dall'originale (STEP 0).
-- `tools/generate-landscape.js` — script Node usa-e-getta che genera e
-  verifica il layout landscape (non caricato dalla pagina):
-  `node tools/generate-landscape.js`.
-- `cruciverba.md` — specifica del progetto.
+## Running it
 
+```bash
+python3 -m http.server 8000
+# then open http://localhost:8000
+```
 
+Any static server will do. There is nothing to install and nothing to build.
+
+## Structure
+
+```
+index.html          the page
+style.css           every style
+script.js           reveal logic, clue states, reload cycle
+puzzle.js           the grid: words, positions, clues
+generator.js        builds the layout and checks it fits
+preloader.js        the counting preloader
+assets/             sprite for the walking figure
+cruciverba.md       the project spec
+tools/design-notes.md  design values read off the original
+```
+
+## Changing the content
+
+Words, positions and clues live in [`puzzle.js`](puzzle.js). `generator.js`
+builds and validates the layout from them, so a new word list is enough — the
+grid follows.
+
+## Deploy
+
+Every push to `main` runs [`deploy.yml`](.github/workflows/deploy.yml), which
+publishes the site to GitHub Pages.
+
+## License
+
+[MIT](LICENSE) © Andrea Lando ([Acci4i0](https://github.com/Acci4i0)).
+Covers my code and content only — not the original design this study looks at.
